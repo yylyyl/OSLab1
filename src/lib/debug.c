@@ -1,5 +1,6 @@
 #include "debug.h"
 #include "x86.h"
+#include "stdarg.h"
 
 #define SERIAL_PORT  0x3F8
 
@@ -25,11 +26,18 @@ serial_printc(char ch) {
 	out_byte(SERIAL_PORT, ch);
 }
 
-int vfprintf(void (*)(char), const char *, void **);
+int vfprintf(void (*)(char), const char *, va_list);
 
 int
 printk(const char *fmt, ...) {
-	void **args = (void **)&fmt + 1;
-	return vfprintf(serial_printc, fmt, args);
+	/* void **args = (void **)&fmt + 1; 看不懂，囧 */
+	int r;
+	va_list arg;
+
+	va_start (arg, fmt);
+	r =  vfprintf(serial_printc, fmt, arg);
+	va_end (arg);
+
+	return r;
 }
 

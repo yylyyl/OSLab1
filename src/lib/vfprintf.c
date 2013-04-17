@@ -13,21 +13,31 @@
 int
 vfprintf(void (*putchar_func)(char), const char *format, va_list arg) {
 	const char *s;
+	int num = 0;
 	for (s = format; *s; s ++) {
 		if(*s=='%') {
 			s ++;
 			switch (*s) {
 				case 'd':
-					vfprintf(putchar_func, itoa(va_ar (arg, int), 10), (va_list)NULL);
+					assert(arg);
+					num += vfprintf(putchar_func, itoa(va_arg(arg, int), 10), (va_list)NULL);
 					break;
 				case 'x':
-					vfprintf(putchar_func, utoa(va_arg(arg, int), 16), (va_list)NULL);
+					assert(arg);
+					num += vfprintf(putchar_func, utoa(va_arg(arg, int), 16), (va_list)NULL);
 					break;
 				case 's':
-					vfprintf(putchar_func, va_arg(arg, char*), (va_list)NULL);
+					assert(arg);
+					num += vfprintf(putchar_func, va_arg(arg, char*), (va_list)NULL);
 					break;
 				case 'c':
+					assert(arg);
 					putchar_func(va_arg(arg, char));
+					num ++; 
+					break;
+				case '%':
+					putchar_func(*s);
+					num ++;
 					break;
 				case 0:
 					//it ends?! wtf!
@@ -36,11 +46,13 @@ vfprintf(void (*putchar_func)(char), const char *format, va_list arg) {
 				default:
 					//not implemented
 					putchar_func(*s);
+					num ++;
 			}
 		} else {
 			putchar_func(*s);
+			num ++;
 		}
 	}
-	return 0;
+	return num;
 }
 

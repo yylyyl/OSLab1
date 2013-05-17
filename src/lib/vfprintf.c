@@ -12,7 +12,7 @@
  */
 int
 vfprintf(void (*putchar_func)(char), const char *format, va_list arg) {
-	const char *s;
+	const char *s, *s2;
 	int num = 0;
 	for (s = format; *s; s ++) {
 		if(*s=='%') {
@@ -28,7 +28,10 @@ vfprintf(void (*putchar_func)(char), const char *format, va_list arg) {
 					break;
 				case 's':
 					assert(arg);
-					num += vfprintf(putchar_func, va_arg(arg, char*), (va_list)NULL);
+					for(s2=va_arg(arg, char*); *s2; s2 ++) {
+						putchar_func(*s2);
+						num++;
+					}
 					break;
 				case 'c':
 					assert(arg);

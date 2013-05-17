@@ -13,7 +13,7 @@ os_init(void) {
 	printk("vfprintf test starts!\n");
 	printk("test %%d: %d %d(negtive)\n", 9876654, -981234);
 	printk("test %%x: %x %x\n", 9876654, 981234);
-	printk("test %%s: %s %s(empty)\n", "hello~~~", "");
+	printk("test %%s: %s(%%s in arguments) %s(empty)\n", "hello~~%s~~", "");
 	printk("test %%c: %c %c %c\n", 'H', 'c', '9');
 	printk("vfprintf test ends!\n");
 	sti();

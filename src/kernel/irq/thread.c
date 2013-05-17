@@ -5,8 +5,7 @@
 
 PCB *current;
 
-#define max_threads 32
-int threads = 1;
+int threads = 0;
 PCB pcbs[max_threads];
 ListHead runq_h;
 ListHead sleepq_h;
@@ -34,7 +33,7 @@ PCB *create_kthread(void *entry) {
     tf->es = KSEL(SEG_KDATA);
     tf->cs = KSEL(SEG_KCODE);
     tf->eflags = FL_IF;
-    pcb->tid = threads;
+    pcb->pid = threads;
     printk("Created thread %d\n", threads);
     add(&sleepq_h, &pcb->sleepq);
     threads++;
@@ -100,7 +99,7 @@ void next_thread() {
         current = list_entry(current->runq.next, PCB, runq);
     }
 
-    //printk("Thread %d is going to run\n", current->tid);
+    printk("Thread %d is going to run\n", current->pid);
 }
 
 void new_sem(Semaphore *sem, int value) {

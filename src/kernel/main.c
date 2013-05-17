@@ -3,11 +3,16 @@
 #include "vm.h"
 #include "irq.h"
 #include "thread.h"
+#include "hal.h"
+#include "term.h"
+#include "time.h"
+#include "tty.h"
 
 extern void A(void);
 extern void B(void);
 
 extern void test_setup();
+extern void test();
 
 void
 os_init(void) {
@@ -16,11 +21,15 @@ os_init(void) {
 	init_idt();
 	init_i8259();
 	init_thread();
-	printk("The OS is now working!\n");	
+	printk("The OS is now working!\n");
+	init_hal();
+	init_timer();
+	init_tty();
+	test();
 	sti();
 	//wakeup(create_kthread(A));
 	//wakeup(create_kthread(B));
-	test_setup();
+	//test_setup();
 	while (TRUE) {
 		wait_intr();
 	}

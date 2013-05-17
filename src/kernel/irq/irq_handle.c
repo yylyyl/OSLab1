@@ -3,9 +3,22 @@
 #include "thread.h"
 
 extern PCB *current;
+boolean in_irq_handle;
+
+#define max_irq 32
+struct irq_handler {
+	int irq;
+	void (*func)(void);
+};
+typedef struct irq_handler irq_handler;
+
+irq_handler handler[max_irq];
+int handler_count = 0;
 
 void irq_handle(TrapFrame *tf) {
 	int irq = tf->irq;
+	in_irq_handle = TRUE;
+
 	current->tf = tf;
 	assert(irq >= 0);
 
@@ -14,6 +27,7 @@ void irq_handle(TrapFrame *tf) {
 		if(irq == 0x80) {
 			next_thread();
 //printk("a");
+			in_irq_handle = FALSE;
 			return;
 		}
 		cli();
@@ -29,5 +43,20 @@ void irq_handle(TrapFrame *tf) {
 			next_thread();
 	       		//printk("time interrupt ends\n");
 		}
+		int i;
+		for(i=0; i<handler_count; i++) {
+			irq_handler *ptr = &handler[i];
+			if(ptr->irq == irq - 1000) {
+				ptr->func();
+			}
+		}
 	}
+	in_irq_handle = FALSE;
+}
+
+void add_irq_handle(int irq, void (*func)(void)) {
+	assert(handler_count < max_irq);
+	irq_handler *ptr = &handler[handler_count++];
+	ptr->irq = irq;
+	ptr->func = func;
 }

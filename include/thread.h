@@ -7,23 +7,25 @@
 #define __THREAD_H__
 
 #define KSTACK_SIZE 8192
-
-struct PCB {
-    TrapFrame *tf;
-    uint8_t kstack[KSTACK_SIZE];
-    int tid;
-    ListHead runq;
-    ListHead sleepq;
-    ListHead semq;
-    int lock;
-};
-typedef struct PCB PCB;
+#define max_threads 64
 
 struct Semaphore {
     int count;
     ListHead queue;
 };
 typedef struct Semaphore Semaphore;
+
+struct PCB {
+    TrapFrame *tf;
+    uint8_t kstack[KSTACK_SIZE];
+    pid_t pid;
+    ListHead runq;
+    ListHead sleepq;
+    ListHead semq;
+    int lock;
+    Semaphore msg_mutex;
+};
+typedef struct PCB PCB;
 
 PCB *create_kthread(void *entry);
 void sleep(void);

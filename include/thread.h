@@ -14,6 +14,7 @@ struct PCB {
     int tid;
     ListHead runq;
     ListHead sleepq;
+    ListHead semq;
     int lock;
 };
 typedef struct PCB PCB;
@@ -31,5 +32,9 @@ void lock(void);
 void unlock(void);
 void init_thread(void);
 void next_thread();
+
+void new_sem(Semaphore *sem, int value);
+void P(Semaphore *sem);
+void V(Semaphore *sem);
 
 #endif

@@ -3,7 +3,6 @@
 #include "thread.h"
 
 extern PCB *current;
-extern PCB *temp;
 
 void irq_handle(TrapFrame *tf) {
 	int irq = tf->irq;
@@ -13,7 +12,6 @@ void irq_handle(TrapFrame *tf) {
 	if (irq < 1000) {
 		// exception
 		if(irq == 0x80) {
-			current = temp;
 			next_thread();
 //printk("a");
 			return;

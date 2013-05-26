@@ -37,6 +37,8 @@ list_del(ListHead *data) {
 	ListHead *next = data->next;
 	if (prev != NULL) prev->next = next;
 	if (next != NULL) next->prev = prev;
+	data->prev = NULL;
+	data->next = NULL;
 }
 
 static inline void

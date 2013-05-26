@@ -4,7 +4,6 @@
 #include "string.h"
 
 PCB *current;
-PCB *temp;
 
 #define max_threads 32
 int threads = 1;
@@ -12,6 +11,8 @@ PCB pcbs[max_threads];
 ListHead runq_h;
 ListHead sleepq_h;
 ListHead semq_h;
+
+extern void add(ListHead *list, ListHead *data);
 
 void init_thread(void) {
     memset(&pcbs, 0, max_threads*sizeof(PCB));
@@ -35,35 +36,54 @@ PCB *create_kthread(void *entry) {
     tf->eflags = FL_IF;
     pcb->tid = threads;
     printk("Created thread %d\n", threads);
-    list_add_before(&sleepq_h, &pcb->sleepq);
+    add(&sleepq_h, &pcb->sleepq);
     threads++;
 
     return pcb;
 }
 
+void add(ListHead *list, ListHead *data) {
+    lock();
+    list_add_before(list, data);
+    unlock();
+}
+
+void rm(ListHead *data) {
+    lock();
+    list_del(data);
+    unlock();
+}
 
 void sleep(void) {
-    temp = list_entry(current->runq.next, PCB, runq);
-    list_del(&current->runq);
-    list_add_before(&sleepq_h, &current->sleepq);
+    //assert(current->sleepq.next==NULL);
+    assert(current->runq.next != NULL);
+    rm(&current->runq);
+    add(&sleepq_h, &current->sleepq);
     asm volatile("int $0x80");
 }
 
 void wakeup(PCB *pcb) {
     //printk("wake up thread %d\n", pcb->tid);
-    list_add_before(&runq_h, &pcb->runq);
-    list_del(&pcb->sleepq);
+    assert(pcb->runq.next==NULL);
+    //assert(pcb->sleepq.next != NULL);
+    add(&runq_h, &pcb->runq);
+    rm(&pcb->sleepq);
 }
 
 void lock(void) {
+    //printk("lock\n");
+    assert(current->lock >= 0);
     cli();
     current->lock++;
 }
 
 void unlock(void) {
+    //printk("unlock?\n");
+    //assert((current->tf->eflags & FL_IF) != FL_IF);
     current->lock--;
     assert(current->lock >= 0);
     if(current->lock == 0) {
+        //printk("unlock!\n");
         sti();
     }
 }
@@ -73,7 +93,7 @@ void next_thread() {
         //printk("running queue is empty\n");
         return;
     }
-    if(current==list_entry(runq_h.prev, PCB, runq) || current->runq.next==current->runq.prev) {
+    if(current==list_entry(runq_h.prev, PCB, runq) || current->runq.next==NULL) {
         // current->runq.next==NULL ? It is kernel's first thread which is not in runq.
         current = list_entry(runq_h.next, PCB, runq);
     } else {
@@ -89,19 +109,23 @@ void new_sem(Semaphore *sem, int value) {
 }
 
 void P(Semaphore *sem) {
+    lock();
     sem->count --;
     if (sem->count < 0) {
-        list_add_before(&sem->queue, &current->semq);
+        add(&sem->queue, &current->semq);
         sleep(); // 令当前进程立即进入睡眠
     }
+    unlock();
 }
 
 void V(Semaphore *sem) {
+    lock();
     sem->count ++;
     if (sem->count <= 0) {
         assert(!list_empty(&sem->queue));
         PCB *pcb = list_entry(sem->queue.next, PCB, semq);
-        list_del(sem->queue.next);
+        rm(sem->queue.next);
         wakeup(pcb); // 唤醒PCB所对应的进程
     }
+    unlock();
 }

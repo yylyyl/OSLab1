@@ -16,11 +16,11 @@ os_init(void) {
 	init_idt();
 	init_i8259();
 	init_thread();
-	printk("The OS is now working!\n");
+	printk("The OS is now working!\n");	
+	sti();
 	//wakeup(create_kthread(A));
 	//wakeup(create_kthread(B));
-	test_setup();	
-	sti();
+	test_setup();
 	while (TRUE) {
 		wait_intr();
 	}

@@ -4,7 +4,7 @@ CFLAGS  = -m32 -static -ggdb -MD -Wall -Werror -I./include -O2 \
 		 -fno-builtin -fno-stack-protector -fno-omit-frame-pointer
 ASFLAGS = -m32 -MD -I./include
 LDFLAGS = -melf_i386
-QEMU    = qemu-system-i386
+QEMU    = qemu-system-i386 --no-kvm
 
 CFILES  = $(shell find src/ -name "*.c")
 SFILES  = $(shell find src/ -name "*.S")

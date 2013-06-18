@@ -7,12 +7,16 @@
 #include "term.h"
 #include "time.h"
 #include "tty.h"
+#include "message.h"
 
 extern void A(void);
 extern void B(void);
 
 extern void test_setup();
 extern void test();
+
+void test_msg();
+void ttyd(void);
 
 void
 os_init(void) {
@@ -22,10 +26,16 @@ os_init(void) {
 	init_i8259();
 	init_thread();
 	printk("The OS is now working!\n");
-	init_hal();
-	init_timer();
-	init_tty();
-	test();
+	//printk("%d %d\n", sizeof(Message), sizeof(DevMessage));
+	//init_hal();
+	//init_timer();
+	//init_tty();
+
+	//TTY = 1;
+	//wakeup(create_kthread(ttyd));
+
+	//test();
+	test_msg();
 	sti();
 	//wakeup(create_kthread(A));
 	//wakeup(create_kthread(B));
@@ -45,58 +55,21 @@ entry(void) {
 }
 
 void A(void) {
-    while(1) {
-        printk("AAA\n");
-        wait_intr();
-    }
+    int i;
+    for(i=0;i<999;i++)
+        printk(".");
+    Message m;
+    send(2, &m);
 }
 
 void B(void) {
-    while(1) {
-        printk("BBB\n");
-        wait_intr();
-    }
-}
-
-#define NBUF 5
-int buf[NBUF], f = 0, r = 0, g = 1, tid = 1;
-Semaphore empty, full, mutex;
-
-void
-test_producer(void) {
-    while (TRUE) {
-        P(&empty);
-        P(&mutex);
-        buf[f ++] = g ++;
-        f %= NBUF;
-        V(&mutex);
-        V(&full);
-    }
+    Message m;
+    receive(ANY, &m);
+    printk("ok\n");
 }
 
 void
-test_consumer(void) {
-    int id = tid ++;
-    while (TRUE) {
-        P(&full);
-        P(&mutex);
-        printk("#%d Got: %d\n", id, buf[r ++]);
-        r %= NBUF;
-        V(&mutex);
-        V(&empty);
-    }
-}
-
-void
-test_setup(void) {
-    new_sem(&full, 0);
-    new_sem(&empty, NBUF);
-    new_sem(&mutex, 1);
-    wakeup(create_kthread(test_producer));
-    wakeup(create_kthread(test_producer));
-    wakeup(create_kthread(test_producer));
-    wakeup(create_kthread(test_consumer));
-    wakeup(create_kthread(test_consumer));
-    wakeup(create_kthread(test_consumer));
-    wakeup(create_kthread(test_consumer));
+test_msg(void) {
+    wakeup(create_kthread(A));
+    wakeup(create_kthread(B));
 }

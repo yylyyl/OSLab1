@@ -5,7 +5,7 @@
 
 PCB *current;
 
-int threads = 0;
+int threads = 1;
 PCB pcbs[max_threads];
 ListHead runq_h;
 ListHead sleepq_h;
@@ -34,10 +34,11 @@ PCB *create_kthread(void *entry) {
     tf->cs = KSEL(SEG_KCODE);
     tf->eflags = FL_IF;
     pcb->pid = threads;
-    printk("Created thread %d\n", threads);
+    //printk("Created thread %d\n", threads);
     add(&sleepq_h, &pcb->sleepq);
     threads++;
 
+    new_sem(&pcb->msg_mutex, 0);
     return pcb;
 }
 
@@ -62,7 +63,7 @@ void sleep(void) {
 }
 
 void wakeup(PCB *pcb) {
-    //printk("wake up thread %d\n", pcb->tid);
+    //printk("Wake up thread %d\n", pcb->pid);
     assert(pcb->runq.next==NULL);
     //assert(pcb->sleepq.next != NULL);
     add(&runq_h, &pcb->runq);
@@ -90,6 +91,7 @@ void unlock(void) {
 void next_thread() {
     if(list_empty(&runq_h)) {
         //printk("running queue is empty\n");
+	current = &pcbs[0];
         return;
     }
     if(current==list_entry(runq_h.prev, PCB, runq) || current->runq.next==NULL) {
@@ -99,7 +101,7 @@ void next_thread() {
         current = list_entry(current->runq.next, PCB, runq);
     }
 
-    printk("Thread %d is going to run\n", current->pid);
+    //printk("Thread %d is going to run\n", current->pid);
 }
 
 void new_sem(Semaphore *sem, int value) {
@@ -108,6 +110,7 @@ void new_sem(Semaphore *sem, int value) {
 }
 
 void P(Semaphore *sem) {
+    //printk("p %d\n", sem->count);
     lock();
     sem->count --;
     if (sem->count < 0) {
@@ -118,6 +121,7 @@ void P(Semaphore *sem) {
 }
 
 void V(Semaphore *sem) {
+    //printk("v %d\n", sem->count);
     lock();
     sem->count ++;
     if (sem->count <= 0) {

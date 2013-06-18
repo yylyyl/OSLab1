@@ -4,6 +4,7 @@
 
 #define MAX_MESSAGE 1024
 Message message_q[MAX_MESSAGE];
+boolean message_used[MAX_MESSAGE];
 int message_count = 0;
 int message_head = -1;
 int message_tail = -1;
@@ -16,11 +17,11 @@ extern int threads;
 Message* pick_empty_message() {
 	int i;
 	for(i=0; i<MAX_MESSAGE; i++) {
-		Message *ptr = &message_q[i];
-		if(!ptr->used) {
-			ptr->used = TRUE;
+		if(!message_used[i]) {
 			message_count++;
-			return ptr;
+			//printk("msg %d used\n", i);
+			message_used[i] = TRUE;
+			return &message_q[i];
 		}
 	}
 	assert(FALSE);
@@ -38,7 +39,7 @@ void send(pid_t dst, Message *m) {
 		m->src = current->pid;
 	}
 	assert(dst != ANY);
-	printk("Message from %d to %d\n", m->src, dst);
+	//printk("Message from %d to %d\n", m->src, dst);
 
 	/*if(dst==ANY) {
 		int i;
@@ -49,32 +50,35 @@ void send(pid_t dst, Message *m) {
 			V(&p->msg_mutex);
 		}
 	} else {*/
-		assert(dst < threads);
+		//assert(dst < threads);
 		PCB *p = &pcbs[dst];
+		assert(p->pid == dst);
 		Message *ptr = pick_empty_message();
 		memcpy(ptr, m, sizeof(Message));
+		//ptr->used = TRUE;
 		V(&p->msg_mutex);
 	//}
 
 	unlock();
 }
 
-void receive(pid_t dst, Message *m) {
+void receive(pid_t src, Message *m) {
 	lock();
-	printk("wait message to %d", dst);
+	//printk("Thread %d waits message from %d\n", current->pid, src);
 	P(&current->msg_mutex);
 	
+	//printk("Thread %d received message from %d\n", current->pid, src);
 	int i;
 	Message *msg = NULL;
 	for(i=0; i<MAX_MESSAGE; i++) {
 		msg = &message_q[i];
-		if(msg->used && (msg->dest==dst || dst==ANY))
+		if(message_used[i] && msg->dest==current->pid && (msg->src==src || src==ANY))
 			break;
 	}
 	assert(i != MAX_MESSAGE);
 	memcpy(m, msg, sizeof(Message));
-
-	msg->used = FALSE;
+	//printk("msg %d freed\n", i);
+	message_used[i] = FALSE;
 
 	message_count--;
 	unlock();

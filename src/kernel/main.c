@@ -27,15 +27,15 @@ os_init(void) {
 	init_thread();
 	printk("The OS is now working!\n");
 	//printk("%d %d\n", sizeof(Message), sizeof(DevMessage));
-	//init_hal();
-	//init_timer();
-	//init_tty();
+	init_hal();
+	init_timer();
+	init_tty();
 
-	//TTY = 1;
-	//wakeup(create_kthread(ttyd));
+	TTY = 1;
+	wakeup(create_kthread(ttyd));
 
-	//test();
-	test_msg();
+	test();
+	//test_msg();
 	sti();
 	//wakeup(create_kthread(A));
 	//wakeup(create_kthread(B));
